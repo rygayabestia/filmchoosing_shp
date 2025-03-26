@@ -5,6 +5,28 @@
     {% endfor %}
 </p>
 
+{% if movie.video_file %}
+<div class="video-player">
+    <video width="640" height="360" controls>
+        <source src="{{ movie.video_file.url }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+</div>
+{% else %}
+    {% if request.user.is_superuser %}
+    <div class="upload-form">
+        <h3>Upload Video for this Movie</h3>
+        <form method="post" enctype="multipart/form-data" action="{% url 'upload_movie_video' movie.id %}">
+            {% csrf_token %}
+            <input type="file" name="video_file" accept="video/mp4" required>
+            <button type="submit">Upload Video</button>
+        </form>
+    </div>
+    {% else %}
+    <p>Video player is not available for this movie.</p>
+    {% endif %}
+{% endif %}
+
 <a href="{% url 'like_movie' movie.movie_id %}">
     {% if request.user.is_authenticated and movie in request.user.liked_movies.all %}
         Unlike

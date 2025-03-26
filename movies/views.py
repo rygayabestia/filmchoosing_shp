@@ -4,6 +4,7 @@ from django.shortcuts import redirect
 from users.models import User
 from django.core.paginator import Paginator
 from users.models import Liked
+from django.contrib.auth.decorators import user_passes_test
 
 def movie_list(request):
     all_movies = Movie.objects.all()
@@ -44,6 +45,18 @@ def movie_detail(request, movie_id):
         'movie': movie,
         'filtered_genres': filtered_genres,
     })
+
+@user_passes_test(lambda u: u.is_superuser)
+def upload_movie_video(request, movie_id):
+    movie = get_object_or_404(Movie, pk=movie_id)
+
+    if request.method == 'POST':
+        video_file = request.FILES.get('video_file')
+        if video_file:
+            movie.video_file = video_file
+            movie.save()
+
+    return redirect('movie_detail', movie_id=movie.movie_id)
 
 def like_movie(request, movie_id):
     if not request.session.get('user_id'):  # Проверяем, авторизован ли пользователь
