@@ -8,13 +8,29 @@
 <body>
     <div class="movie-container">
         <h1>{{ movie.title }}</h1>
-
-        <p class="genres">
-            Genres:
-            {% for genre, value in filtered_genres.items %}
-                {{ genre }}{% if not forloop.last %}, {% endif %}
+    <p class="genres">
+        Жанры:
+        {% for genre, value in filtered_genres.items %}
+            {{ genre }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            Жанры не указаны
+        {% endfor %}
+    </p>
+        <div class="movie-rating">
+    <h3>Рейтинг: {{ movie.rating|floatformat:1 }}/5</h3>
+    <div class="rating-stars">
+        <form method="post" action="{% url 'rate_movie' movie.id %}">
+            {% csrf_token %}
+            {% for i in "54321" %}
+                <button type="submit" name="rating" value="{{ i }}"
+                        class="star {% if movie.rating >= i|add:0 %}active{% endif %}">
+                    ★
+                </button>
             {% endfor %}
-        </p>
+        </form>
+    </div>
+    <p>Оценок: {{ movie.rating_count }}</p>
+</div>
 
         <!-- Видеоплеер или форма загрузки -->
         <div class="video-section">

@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from .models import Movie, Comment
+from .models import Movie, Comment, MovieRating
 from django.shortcuts import redirect
 from users.models import User
 from django.core.paginator import Paginator
@@ -7,7 +7,8 @@ from users.models import Liked
 from django.contrib.auth.decorators import user_passes_test
 from .forms import CommentForm
 from django.contrib.auth.decorators import login_required
-
+from .models import Complaint
+from .forms import ComplaintForm
 
 
 def movie_list(request):
@@ -46,7 +47,7 @@ def movie_list(request):
 def movie_detail(request, movie_id):
     movie = get_object_or_404(Movie, pk=movie_id)
     comments = Comment.objects.filter(movie=movie)
-
+    filtered_genres = {genre: value for genre, value in movie.genres.items() if value == 'A'}
     if request.method == 'POST':
         form = CommentForm(request.POST)
         if form.is_valid():
@@ -57,11 +58,11 @@ def movie_detail(request, movie_id):
             return redirect('movie_detail', movie_id=movie.id)
     else:
         form = CommentForm()
-    filtered_genres = movie.genres if hasattr(movie, 'genres') else {}
     return render(request, 'movies/movie_detail.html', {
         'movie': movie,
         'comments': comments,
         'form': form,
+        'filtered_genres': filtered_genres
     })
 
 @login_required
@@ -94,3 +95,51 @@ def like_movie(request, movie_id):
         Liked.objects.create(user=user, movie=movie)  # Создаем запись о лайке
 
     return redirect('movie_detail', movie_id=movie_id)  # Перенаправляем на страницу описания фильма
+
+@login_required
+def rate_movie(request, movie_id):
+    movie = get_object_or_404(Movie, pk=movie_id)
+    if request.method == 'POST':
+        rating = int(request.POST.get('rating'))
+
+        # Сохраняем оценку пользователя
+        MovieRating.objects.update_or_create(
+            user=request.user,
+            movie=movie,
+            defaults={'rating': rating}
+        )
+
+        # Обновляем средний рейтинг фильма
+        movie.update_rating(rating)
+
+    return redirect('movie_detail', movie_id=movie_id)
+
+@user_passes_test(lambda u: u.is_staff)
+def complaint_list(request):
+    complaints = Complaint.objects.filter(is_resolved=False).order_by('-created_at')
+    if request.method == 'POST':
+        text = request.POST.get('text')
+        if text:
+            Complaint.objects.create(user=request.user, text=text)
+            return redirect('complaint_list')
+    return render(request, 'movies/complaint_list.html', {
+        'complaints': complaints,
+        'no_complaints': not complaints.exists()
+    })
+
+@user_passes_test(lambda u: u.is_superuser)
+def resolve_complaint(request, complaint_id):
+    complaint = get_object_or_404(Complaint, pk=complaint_id)
+    if request.method == 'POST':
+        complaint.is_resolved = True
+        complaint.save()
+    return redirect('complaint_list')  # Исправлен редирект
+
+@login_required
+def submit_complaint(request):
+    if request.method == 'POST':
+        text = request.POST.get('text')
+        if text:
+            Complaint.objects.create(user=request.user, text=text)
+            return redirect('movie_list')  # Перенаправление на главную
+    return redirect('movie_list')

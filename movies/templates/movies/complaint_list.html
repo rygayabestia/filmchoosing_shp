@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Список жалоб</title>
+</head>
+<body>
+     <div class="header">
+        <h1>Список жалоб</h1>
+        <a href="{% url 'movie_list' %}" class="back-button">На главную</a>
+    </div>
+
+    {% if complaints %}
+        {% for complaint in complaints %}
+            <div class="complaint-item">
+                <p>{{ complaint.text }}</p>
+                <small>От {{ complaint.user.username }} ({{ complaint.created_at|date:"d.m.Y H:i" }})</small>
+
+                {% if request.user.is_superuser %}
+                <form method="post" action="{% url 'resolve_complaint' complaint.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Отметить как выполненную</button>
+                </form>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Жалоб пока нет.</p>
+    {% endif %}
+
+    <div class="complaint-form">
+        <h2>Оставить новую жалобу</h2>
+        <form method="post">
+            {% csrf_token %}
+            <textarea name="text" placeholder="Опишите вашу проблему..." required></textarea>
+            <button type="submit">Отправить жалобу</button>
+        </form>
+    </div>
+</body>
+</html>

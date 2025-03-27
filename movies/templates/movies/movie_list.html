@@ -4,21 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movie List</title>
-</head>
+    </head>
 <body>
-    <header>
-        <nav>
-            <a href="{% url 'movie_list' %}">Home</a>
-            {% if request.session.user_id %}
-                <p>User ID: {{ request.session.user_id }}</p>
-                <a href="{% url 'profile' %}">Profile</a>
-                <a href="{% url 'logout' %}">Logout</a>
-            {% else %}
-                <a href="{% url 'login' %}">Login</a>
-                <a href="{% url 'register' %}">Register</a>
-            {% endif %}
-        </nav>
-    </header>
+<header>
+    <nav>
+        <a href="{% url 'movie_list' %}">Home</a>
+        {% if request.user.is_authenticated %}
+            <p>User: {{ request.user.username }}</p>
+            <a href="{% url 'profile' %}">Profile</a>
+            <a href="{% url 'logout' %}">Logout</a>
+            <a href="{% url 'complaint_list' %}">Жалобы</a>
+        {% else %}
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'register' %}">Register</a>
+        {% endif %}
+    </nav>
+</header>
+
 
     <h1>Movie List</h1>
 
@@ -28,7 +30,7 @@
         {% for genre in genres %}
             <label>
                 <input type="checkbox" name="genres" value="{{ genre }}"
-                    {% if genre in selected_genres %}checked{% endif %}>
+                       {% if genre in selected_genres %}checked{% endif %}>
                 {{ genre }}
             </label><br>
         {% endfor %}
