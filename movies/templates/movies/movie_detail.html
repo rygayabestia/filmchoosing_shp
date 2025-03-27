@@ -1,37 +1,90 @@
-<h1>{{ movie.title }}</h1>
-<p>Genres:
-    {% for genre, value in filtered_genres.items %}
-        {{ genre }}{% if not forloop.last %}, {% endif %}
-    {% endfor %}
-</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ movie.title }}</title>
+</head>
+<body>
+    <div class="movie-container">
+        <h1>{{ movie.title }}</h1>
 
-{% if movie.video_file %}
-<div class="video-player">
-    <video width="640" height="360" controls>
-        <source src="{{ movie.video_file.url }}" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>
-</div>
-{% else %}
-    {% if request.user.is_superuser %}
-    <div class="upload-form">
-        <h3>Upload Video for this Movie</h3>
-        <form method="post" enctype="multipart/form-data" action="{% url 'upload_movie_video' movie.id %}">
-            {% csrf_token %}
-            <input type="file" name="video_file" accept="video/mp4" required>
-            <button type="submit">Upload Video</button>
-        </form>
+        <p class="genres">
+            Genres:
+            {% for genre, value in filtered_genres.items %}
+                {{ genre }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+
+        <!-- Видеоплеер или форма загрузки -->
+        <div class="video-section">
+            {% if movie.video_file %}
+            <div class="video-player">
+                <video width="640" height="360" controls>
+                    <source src="{{ movie.video_file.url }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            {% else %}
+                {% if request.user.is_superuser %}
+                <div class="upload-form">
+                    <h3>Upload Video for this Movie</h3>
+                    <form method="post" enctype="multipart/form-data" action="{% url 'upload_movie_video' movie.id %}">
+                        {% csrf_token %}
+                        <input type="file" name="video_file" accept="video/mp4" required>
+                        <button type="submit" class="btn-upload">Upload Video</button>
+                    </form>
+                </div>
+                {% else %}
+                <p class="no-video">Video player is not available for this movie.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Кнопки лайка и возврата -->
+        <div class="action-buttons">
+            <a href="{% url 'like_movie' movie.movie_id %}" class="btn-like">
+                {% if request.user.is_authenticated and movie in request.user.liked_movies.all %}
+                    ❤️ Unlike
+                {% else %}
+                    🤍 Like
+                {% endif %}
+            </a>
+            <a href="{% url 'movie_list' %}" class="btn-back">← Back to list</a>
+        </div>
+
+        <!-- Секция комментариев -->
+        <div class="comments-section">
+            <h2>Comments</h2>
+
+            {% if not comments %}
+                <p class="no-comments">No comments yet. Be the first to comment!</p>
+            {% else %}
+                {% for comment in comments %}
+                    <div class="comment">
+                        <div class="comment-header">
+                            <strong class="comment-author">{{ comment.user.username }}</strong>
+                            <span class="comment-date">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        <p class="comment-text">{{ comment.text }}</p>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Форма комментария -->
+            {% if request.user.is_authenticated %}
+            <div class="comment-form">
+                <h3>Add your comment</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <textarea name="text" class="form-control" rows="3" required></textarea>
+                    <button type="submit" class="btn-submit">Post Comment</button>
+                </form>
+            </div>
+            {% else %}
+            <p class="login-to-comment"><a href="{% url 'login' %}?next={{ request.path }}">Log in</a> to leave a comment.</p>
+            {% endif %}
+        </div>
     </div>
-    {% else %}
-    <p>Video player is not available for this movie.</p>
-    {% endif %}
-{% endif %}
-
-<a href="{% url 'like_movie' movie.movie_id %}">
-    {% if request.user.is_authenticated and movie in request.user.liked_movies.all %}
-        Unlike
-    {% else %}
-        Like
-    {% endif %}
-</a>
-<a href="{% url 'movie_list' %}">Back to list</a>
+</body>
+</html>

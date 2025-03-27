@@ -1,10 +1,14 @@
 from django.shortcuts import render, get_object_or_404
-from .models import Movie
+from .models import Movie, Comment
 from django.shortcuts import redirect
 from users.models import User
 from django.core.paginator import Paginator
 from users.models import Liked
 from django.contrib.auth.decorators import user_passes_test
+from .forms import CommentForm
+from django.contrib.auth.decorators import login_required
+
+
 
 def movie_list(request):
     all_movies = Movie.objects.all()
@@ -38,13 +42,32 @@ def movie_list(request):
         'liked_movie_ids': liked_movie_ids,  # Передаем список лайкнутых фильмов
     })
 
+
 def movie_detail(request, movie_id):
-    movie = get_object_or_404(Movie, movie_id=movie_id)
-    filtered_genres = {genre: value for genre, value in movie.genres.items() if value == 'A'}
+    movie = get_object_or_404(Movie, pk=movie_id)
+    comments = Comment.objects.filter(movie=movie)
+
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.movie = movie
+            comment.user = request.user
+            comment.save()
+            return redirect('movie_detail', movie_id=movie.id)
+    else:
+        form = CommentForm()
+    filtered_genres = movie.genres if hasattr(movie, 'genres') else {}
     return render(request, 'movies/movie_detail.html', {
         'movie': movie,
-        'filtered_genres': filtered_genres,
+        'comments': comments,
+        'form': form,
     })
+
+@login_required
+def user_comments(request):
+    comments = Comment.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'users/user_comments.html', {'comments': comments})
 
 @user_passes_test(lambda u: u.is_superuser)
 def upload_movie_video(request, movie_id):
