@@ -1,58 +1,431 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ movie.title }}</title>
+    <title>{{ movie.title }} | CineWave</title>
+    <style>
+        /* Основные стили */
+        :root {
+            --primary-color: #1a1a2e;
+            --secondary-color: #16213e;
+            --accent-color: #0f3460;
+            --text-color: #e94560;
+            --light-text: #f1f1f1;
+            --button-color: #3a3a5e;
+            --button-hover: #4a4a6e;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* Шапка сайта */
+        header {
+            background-color: var(--secondary-color);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1.5rem;
+            background-color: transparent;
+            color: var(--light-text);
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .nav-btn:hover {
+            color: var(--text-color);
+            border-bottom-color: var(--text-color);
+        }
+
+        /* Основной контейнер */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Заголовок фильма */
+        .movie-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .movie-title {
+            color: var(--text-color);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .movie-genres {
+            font-size: 1.2rem;
+            color: var(--light-text);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Рейтинг фильма */
+        .movie-rating {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .rating-value {
+            color: var(--text-color);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .rating-stars {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .star {
+            background: none;
+            border: none;
+            color: var(--light-text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .star.active {
+            color: var(--text-color);
+        }
+
+        .star:hover {
+            transform: scale(1.2);
+        }
+
+        .rating-count {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        /* Видеоплеер */
+        .video-section {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .video-player {
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .video-player video {
+            width: 100%;
+            display: block;
+        }
+
+        .upload-form {
+            background-color: var(--secondary-color);
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .upload-form h3 {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+        }
+
+        .upload-form input[type="file"] {
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
+        .btn-upload {
+            padding: 0.8rem 1.5rem;
+            background-color: var(--text-color);
+            color: var(--primary-color);
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-upload:hover {
+            background-color: #ff5c7a;
+            transform: translateY(-2px);
+        }
+
+        .no-video {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--light-text);
+        }
+
+        /* Кнопки действий */
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn-like, .btn-back {
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-like {
+            background-color: var(--text-color);
+            color: var(--primary-color);
+        }
+
+        .btn-like:hover {
+            background-color: #ff5c7a;
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background-color: var(--accent-color);
+            color: var(--light-text);
+        }
+
+        .btn-back:hover {
+            background-color: #1a3a6a;
+            transform: translateY(-2px);
+        }
+
+        /* Секция комментариев */
+        .comments-section {
+            background-color: var(--secondary-color);
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .comments-section h2 {
+            color: var(--text-color);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .comment {
+            background-color: rgba(15, 52, 96, 0.3);
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .comment-author {
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .comment-date {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .comment-text {
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .no-comments {
+            text-align: center;
+            font-style: italic;
+            color: #aaa;
+        }
+
+        /* Форма комментария */
+        .comment-form {
+            margin-top: 2rem;
+        }
+
+        .comment-form h3 {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .comment-form textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--accent-color);
+            border-radius: 4px;
+            background-color: rgba(15, 52, 96, 0.3);
+            color: var(--light-text);
+            min-height: 100px;
+            margin-bottom: 1rem;
+            resize: vertical;
+        }
+
+        .comment-form textarea:focus {
+            outline: none;
+            border-color: var(--text-color);
+        }
+
+        .btn-submit {
+            padding: 0.8rem 1.5rem;
+            background-color: var(--text-color);
+            color: var(--primary-color);
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .btn-submit:hover {
+            background-color: #ff5c7a;
+            transform: translateY(-2px);
+        }
+
+        .login-to-comment {
+            text-align: center;
+        }
+
+        .login-to-comment a {
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        /* Футер */
+        footer {
+            background-color: var(--secondary-color);
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .nav-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .movie-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="movie-container">
-        <h1>{{ movie.title }}</h1>
-    <p class="genres">
-        Жанры:
-        {% for genre, value in filtered_genres.items %}
-            {{ genre }}{% if not forloop.last %}, {% endif %}
-        {% empty %}
-            Жанры не указаны
-        {% endfor %}
-    </p>
+    <header>
+        <div class="logo">CineWave</div>
+        <div class="nav-buttons">
+            <a href="{% url 'movie_list' %}" class="nav-btn">Главная</a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'profile' %}" class="nav-btn">Профиль</a>
+                <a href="{% url 'logout' %}" class="nav-btn">Выход</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="nav-btn">Вход</a>
+                <a href="{% url 'register' %}" class="nav-btn">Регистрация</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="movie-header">
+            <h1 class="movie-title">{{ movie.title }}</h1>
+            <p class="movie-genres">
+                Жанры:
+                {% for genre, value in filtered_genres.items %}
+                    {{ genre }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    Жанры не указаны
+                {% endfor %}
+            </p>
+        </div>
+
         <div class="movie-rating">
-    <h3>Рейтинг: {{ movie.rating|floatformat:1 }}/5</h3>
-    <div class="rating-stars">
-        <form method="post" action="{% url 'rate_movie' movie.id %}">
-            {% csrf_token %}
-            {% for i in "54321" %}
-                <button type="submit" name="rating" value="{{ i }}"
-                        class="star {% if movie.rating >= i|add:0 %}active{% endif %}">
-                    ★
-                </button>
-            {% endfor %}
-        </form>
-    </div>
-    <p>Оценок: {{ movie.rating_count }}</p>
-</div>
+            <h3 class="rating-value">Рейтинг: {{ movie.rating|floatformat:1 }}/5</h3>
+            <div class="rating-stars">
+                <form method="post" action="{% url 'rate_movie' movie.id %}">
+                    {% csrf_token %}
+                    {% for i in "54321" %}
+                        <button type="submit" name="rating" value="{{ i }}"
+                                class="star {% if movie.rating >= i|add:0 %}active{% endif %}">
+                            ★
+                        </button>
+                    {% endfor %}
+                </form>
+            </div>
+            <p class="rating-count">Оценок: {{ movie.rating_count }}</p>
+        </div>
 
         <!-- Видеоплеер или форма загрузки -->
         <div class="video-section">
             {% if movie.video_file %}
             <div class="video-player">
-                <video width="640" height="360" controls>
+                <video width="800" height="450" controls>
                     <source src="{{ movie.video_file.url }}" type="video/mp4">
-                    Your browser does not support the video tag.
+                    Ваш браузер не поддерживает видео тег.
                 </video>
             </div>
             {% else %}
                 {% if request.user.is_superuser %}
                 <div class="upload-form">
-                    <h3>Upload Video for this Movie</h3>
+                    <h3>Загрузить видео для этого фильма</h3>
                     <form method="post" enctype="multipart/form-data" action="{% url 'upload_movie_video' movie.id %}">
                         {% csrf_token %}
                         <input type="file" name="video_file" accept="video/mp4" required>
-                        <button type="submit" class="btn-upload">Upload Video</button>
+                        <button type="submit" class="btn-upload">Загрузить видео</button>
                     </form>
                 </div>
                 {% else %}
-                <p class="no-video">Video player is not available for this movie.</p>
+                <p class="no-video">Видеоплеер недоступен для этого фильма.</p>
                 {% endif %}
             {% endif %}
         </div>
@@ -61,20 +434,20 @@
         <div class="action-buttons">
             <a href="{% url 'like_movie' movie.movie_id %}" class="btn-like">
                 {% if request.user.is_authenticated and movie in request.user.liked_movies.all %}
-                    ❤️ Unlike
+                    ❤️ Убрать лайк
                 {% else %}
-                    🤍 Like
+                    🤍 Лайк
                 {% endif %}
             </a>
-            <a href="{% url 'movie_list' %}" class="btn-back">← Back to list</a>
+            <a href="{% url 'movie_list' %}" class="btn-back">← Назад к списку</a>
         </div>
 
         <!-- Секция комментариев -->
         <div class="comments-section">
-            <h2>Comments</h2>
+            <h2>Комментарии</h2>
 
             {% if not comments %}
-                <p class="no-comments">No comments yet. Be the first to comment!</p>
+                <p class="no-comments">Пока нет комментариев. Будьте первым!</p>
             {% else %}
                 {% for comment in comments %}
                     <div class="comment">
@@ -90,17 +463,21 @@
             <!-- Форма комментария -->
             {% if request.user.is_authenticated %}
             <div class="comment-form">
-                <h3>Add your comment</h3>
+                <h3>Добавить комментарий</h3>
                 <form method="post">
                     {% csrf_token %}
-                    <textarea name="text" class="form-control" rows="3" required></textarea>
-                    <button type="submit" class="btn-submit">Post Comment</button>
+                    <textarea name="text" class="form-control" rows="3" required placeholder="Ваш комментарий..."></textarea>
+                    <button type="submit" class="btn-submit">Отправить</button>
                 </form>
             </div>
             {% else %}
-            <p class="login-to-comment"><a href="{% url 'login' %}?next={{ request.path }}">Log in</a> to leave a comment.</p>
+            <p class="login-to-comment"><a href="{% url 'login' %}?next={{ request.path }}">Войдите</a>, чтобы оставить комментарий.</p>
             {% endif %}
         </div>
     </div>
+
+    <footer>
+        <p>© 2025 CineWave. Подбирай и смотри!</p>
+    </footer>
 </body>
 </html>

@@ -1,28 +1,276 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile</title>
+    <title>CineWave - Профиль</title>
+    <style>
+        /* Основные стили */
+        :root {
+            --primary-color: #1a1a2e;
+            --secondary-color: #16213e;
+            --accent-color: #0f3460;
+            --text-color: #e94560;
+            --light-text: #f1f1f1;
+            --button-color: #3a3a5e;
+            --button-hover: #4a4a6e;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* Шапка сайта */
+        header {
+            background-color: var(--secondary-color);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1.5rem;
+            background-color: transparent;
+            color: var(--light-text);
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .nav-btn:hover {
+            color: var(--text-color);
+            border-bottom-color: var(--text-color);
+        }
+
+        /* Основной контент */
+        .profile-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .profile-title {
+            color: var(--text-color);
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .profile-info {
+            background-color: var(--secondary-color);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-item {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .info-label {
+            color: var(--text-color);
+            font-weight: bold;
+            display: inline-block;
+            width: 120px;
+        }
+
+        .liked-movies {
+            background-color: var(--secondary-color);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            color: var(--text-color);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .movies-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .movie-item {
+            background-color: rgba(15, 52, 96, 0.3);
+            padding: 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .movie-item:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-3px);
+        }
+
+        .movie-link {
+            color: var(--light-text);
+            text-decoration: none;
+            display: block;
+        }
+
+        .movie-link:hover {
+            color: var(--text-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .action-btn {
+            padding: 0.8rem 1.5rem;
+            background-color: var(--text-color);
+            color: var(--primary-color);
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .action-btn.secondary {
+            background-color: var(--accent-color);
+            color: var(--light-text);
+        }
+
+        .action-btn:hover {
+            background-color: #ff5c7a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-btn.secondary:hover {
+            background-color: #1a3a6a;
+        }
+
+        /* Футер */
+        footer {
+            background-color: var(--secondary-color);
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .nav-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .movies-list {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .action-btn {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h2>Profile</h2>
-    <p>Name: {{ user.name }}</p>
-    <p>Login: {{ user.login }}</p>
-    <p>Password: {{ user.password }}</p>
+    <header>
+        <div class="logo">CineWave</div>
+        <div class="nav-buttons">
+            <a href="{% url 'movie_list' %}" class="nav-btn">Главная</a>
+            <a href="{% url 'profile' %}" class="nav-btn active">Профиль</a>
+            <a href="{% url 'logout' %}" class="nav-btn">Выход</a>
+        </div>
+    </header>
 
-    <h3>Liked Movies</h3>
-    <ul>
-        {% for like in liked_movies %}
-            <li>
-                <a href="{% url 'movie_detail' like.movie.id %}">{{ like.movie.title }}</a>  <!-- Ссылка на описание фильма -->
-            </li>
-        {% endfor %}
-    </ul>
+    <div class="profile-container">
+        <div class="profile-header">
+            <h1 class="profile-title">Ваш профиль</h1>
+        </div>
 
-    <a href="{% url 'edit_profile' %}">Edit Profile</a>
-    <a href="{% url 'logout' %}">Logout</a>
-    <br><br>
-    <a href="{% url 'movie_list' %}">Вернуться на главную</a>
+        <div class="profile-info">
+            <div class="info-item">
+                <span class="info-label">Имя:</span>
+                <span>{{ user.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Логин:</span>
+                <span>{{ user.login }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Пароль:</span>
+                <span>••••••••</span>
+            </div>
+        </div>
+
+        <div class="liked-movies">
+            <h2 class="section-title">Понравившиеся фильмы</h2>
+
+            {% if liked_movies %}
+                <ul class="movies-list">
+                    {% for like in liked_movies %}
+                        <li class="movie-item">
+                            <a href="{% url 'movie_detail' like.movie.id %}" class="movie-link">
+                                {{ like.movie.title }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>У вас пока нет понравившихся фильмов.</p>
+            {% endif %}
+        </div>
+
+        <div class="action-buttons">
+            <a href="{% url 'edit_profile' %}" class="action-btn">Редактировать профиль</a>
+            <a href="{% url 'movie_list' %}" class="action-btn secondary">На главную</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025 CineWave. Подбирай и смотри!</p>
+    </footer>
 </body>
 </html>
