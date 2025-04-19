@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 
-from movies.models import Movie
-from .models import User, Liked
+from movies.models import Movie, Liked
+from .models import User
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 
 def register(request):

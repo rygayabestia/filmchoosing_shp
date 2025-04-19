@@ -4,103 +4,116 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ movie.title }}</title>
+    <style>
+        .messages { margin: 10px 0; padding: 10px; }
+        .alert-error { background-color: #ffdddd; border-left: 5px solid #f44336; }
+        .alert-success { background-color: #ddffdd; border-left: 5px solid #4CAF50; }
+    </style>
 </head>
 <body>
     <div class="movie-container">
-        <h1>{{ movie.title }}</h1>
-    <p class="genres">
-        Жанры:
-        {% for genre, value in filtered_genres.items %}
-            {{ genre }}{% if not forloop.last %}, {% endif %}
-        {% empty %}
-            Жанры не указаны
-        {% endfor %}
-    </p>
-        <div class="movie-rating">
-    <h3>Рейтинг: {{ movie.rating|floatformat:1 }}/5</h3>
-    <div class="rating-stars">
-        <form method="post" action="{% url 'rate_movie' movie.id %}">
-            {% csrf_token %}
-            {% for i in "54321" %}
-                <button type="submit" name="rating" value="{{ i }}"
-                        class="star {% if movie.rating >= i|add:0 %}active{% endif %}">
-                    ★
-                </button>
+        <!-- Сообщения об ошибках/успехе -->
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
             {% endfor %}
+        </div>
+        {% endif %}
+
+        <h1>{{ movie.title }}</h1>
+        <p class="genres">
+            Жанры:
+            {% for genre, value in filtered_genres.items %}
+                {{ genre }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+                Жанры не указаны
+            {% endfor %}
+        </p>
+
+ <div class="movie-rating">
+    <h3>Рейтинг: {{ movie.rating|floatformat:1 }}/5 ({{ movie.rating_count }} оценок)</h3>
+
+    {% if is_authenticated %}
+        <form method="post" action="{% url 'movie_detail' movie.id %}">
+            {% csrf_token %}
+            <div class="rating-stars">
+                {% for i in "54321" %}
+                    <button type="submit" name="rating" value="{{ i }}"
+                            class="star {% if user_rating == i|add:0 %}active{% endif %}"
+                            title="Оценить на {{ i }} звезд">
+                        ★
+                    </button>
+                {% endfor %}
+            </div>
+            <small>
+                Ваша оценка:
+                {% if user_rating %}
+                    {{ user_rating }} звезда(ы)
+                {% else %}
+                    еще не поставлена
+                {% endif %}
+            </small>
         </form>
-    </div>
-    <p>Оценок: {{ movie.rating_count }}</p>
+    {% else %}
+        <p><a href="{% url 'login' %}?next={{ request.path }}">Войдите</a>, чтобы оценить фильм</p>
+    {% endif %}
 </div>
 
-        <!-- Видеоплеер или форма загрузки -->
+        <!-- Видеоплеер -->
         <div class="video-section">
             {% if movie.video_file %}
-            <div class="video-player">
                 <video width="640" height="360" controls>
                     <source src="{{ movie.video_file.url }}" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
-            </div>
-            {% else %}
-                {% if request.user.is_superuser %}
-                <div class="upload-form">
-                    <h3>Upload Video for this Movie</h3>
-                    <form method="post" enctype="multipart/form-data" action="{% url 'upload_movie_video' movie.id %}">
-                        {% csrf_token %}
-                        <input type="file" name="video_file" accept="video/mp4" required>
-                        <button type="submit" class="btn-upload">Upload Video</button>
-                    </form>
-                </div>
-                {% else %}
-                <p class="no-video">Video player is not available for this movie.</p>
-                {% endif %}
-            {% endif %}
-        </div>
-
-        <!-- Кнопки лайка и возврата -->
-        <div class="action-buttons">
-            <a href="{% url 'like_movie' movie.movie_id %}" class="btn-like">
-                {% if request.user.is_authenticated and movie in request.user.liked_movies.all %}
-                    ❤️ Unlike
-                {% else %}
-                    🤍 Like
-                {% endif %}
-            </a>
-            <a href="{% url 'movie_list' %}" class="btn-back">← Back to list</a>
-        </div>
-
-        <!-- Секция комментариев -->
-        <div class="comments-section">
-            <h2>Comments</h2>
-
-            {% if not comments %}
-                <p class="no-comments">No comments yet. Be the first to comment!</p>
-            {% else %}
-                {% for comment in comments %}
-                    <div class="comment">
-                        <div class="comment-header">
-                            <strong class="comment-author">{{ comment.user.username }}</strong>
-                            <span class="comment-date">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
-                        </div>
-                        <p class="comment-text">{{ comment.text }}</p>
-                    </div>
-                {% endfor %}
-            {% endif %}
-
-            <!-- Форма комментария -->
-            {% if request.user.is_authenticated %}
-            <div class="comment-form">
-                <h3>Add your comment</h3>
-                <form method="post">
+            {% elif user_id and request.user.is_superuser %}
+                <form method="post" enctype="multipart/form-data" action="{% url 'upload_movie_video' movie.id %}">
                     {% csrf_token %}
-                    <textarea name="text" class="form-control" rows="3" required></textarea>
-                    <button type="submit" class="btn-submit">Post Comment</button>
+                    <input type="file" name="video_file" accept="video/mp4" required>
+                    <button type="submit">Upload Video</button>
                 </form>
-            </div>
             {% else %}
-            <p class="login-to-comment"><a href="{% url 'login' %}?next={{ request.path }}">Log in</a> to leave a comment.</p>
+                <p>Видео недоступно для этого фильма</p>
             {% endif %}
         </div>
+
+        <!-- Кнопки действий -->
+        <div class="action-buttons">
+            {% if user_id %}
+                <a href="{% url 'like_movie' movie.id %}" class="btn-like">
+                    {% if movie.id in liked_movie_ids %}❤️ Unlike{% else %}🤍 Like{% endif %}
+                </a>
+            {% endif %}
+            <a href="{% url 'movie_list' %}" class="btn-back">← Назад к списку</a>
+        </div>
+
+<!-- Секция комментариев -->
+<div class="comments-section">
+    <h2>Комментарии ({{ comments.count }})</h2>
+
+    {% for comment in comments %}
+    <div class="comment">
+        <strong>{{ comment.user.username }}</strong>
+        <span>{{ comment.created_at|date:"d.m.Y H:i" }}</span>
+        <p>{{ comment.text }}</p>
+    </div>
+    {% empty %}
+    <p>Пока нет комментариев. Будьте первым!</p>
+    {% endfor %}
+
+    {% if is_authenticated %}
+    <form method="post" action="{% url 'movie_detail' movie.id %}" class="comment-form">
+        {% csrf_token %}
+        {{ form.text }}  <!-- Используем форму Django -->
+        <button type="submit" class="btn-submit">Отправить комментарий</button>
+    </form>
+    {% else %}
+    <p><a href="{% url 'login' %}?next={{ request.path }}">Войдите</a>, чтобы оставить комментарий</p>
+    {% endif %}
+</div>
     </div>
 </body>
 </html>

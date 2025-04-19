@@ -16,7 +16,7 @@
                 <p>{{ complaint.text }}</p>
                 <small>От {{ complaint.user.username }} ({{ complaint.created_at|date:"d.m.Y H:i" }})</small>
 
-                {% if request.user.is_superuser %}
+                {% if current_user.is_superuser %}
                 <form method="post" action="{% url 'resolve_complaint' complaint.id %}">
                     {% csrf_token %}
                     <button type="submit">Отметить как выполненную</button>

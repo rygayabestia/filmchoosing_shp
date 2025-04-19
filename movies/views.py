@@ -3,13 +3,12 @@ from .models import Movie, Comment, MovieRating
 from django.shortcuts import redirect
 from users.models import User
 from django.core.paginator import Paginator
-from users.models import Liked
+#from users.models import Liked
 from django.contrib.auth.decorators import user_passes_test
 from .forms import CommentForm
 from django.contrib.auth.decorators import login_required
-from .models import Complaint
+from .models import Complaint, Liked
 from .forms import ComplaintForm
-
 
 def movie_list(request):
     all_movies = Movie.objects.all()
@@ -26,9 +25,9 @@ def movie_list(request):
             if all(movie.genres.get(genre) == 'A' for genre in selected_genres):
                 movies.append(movie)
 
-    # Получаем список лайкнутых фильмов для текущего пользователя
+    # Получаем список лайкнутых фильмов для текущего пользователя через сессию
     liked_movie_ids = []
-    if request.session.get('user_id'):
+    if 'user_id' in request.session:
         user_id = request.session['user_id']
         liked_movie_ids = Liked.objects.filter(user_id=user_id).values_list('movie_id', flat=True)
 
@@ -37,10 +36,10 @@ def movie_list(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'movies/movie_list.html', {
-        'movies': movies,  # Передаем отфильтрованные фильмы
-        'genres': sorted(genres),  # Сортируем жанры для удобства
-        'selected_genres': selected_genres,  # Передаем выбранные жанры
-        'liked_movie_ids': liked_movie_ids,  # Передаем список лайкнутых фильмов
+        'movies': movies,
+        'genres': sorted(genres),
+        'selected_genres': selected_genres,
+        'liked_movie_ids': liked_movie_ids,
     })
 
 
@@ -48,28 +47,77 @@ def movie_detail(request, movie_id):
     movie = get_object_or_404(Movie, pk=movie_id)
     comments = Comment.objects.filter(movie=movie)
     filtered_genres = {genre: value for genre, value in movie.genres.items() if value == 'A'}
-    if request.method == 'POST':
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.movie = movie
-            comment.user = request.user
-            comment.save()
-            return redirect('movie_detail', movie_id=movie.id)
-    else:
-        form = CommentForm()
+
+    form = CommentForm()
+    is_authenticated = 'user_id' in request.session
+    is_liked = False
+    user_rating = None
+
+    if is_authenticated:
+        user_id = request.session['user_id']
+        # Проверка лайка
+        is_liked = Liked.objects.filter(user_id=user_id, movie=movie).exists()
+
+        # Получение текущей оценки пользователя
+        try:
+            rating_obj = MovieRating.objects.get(user_id=user_id, movie=movie)
+            user_rating = rating_obj.rating
+        except MovieRating.DoesNotExist:
+            pass
+
+        # Обработка POST-запроса
+        if request.method == 'POST':
+            # Обработка комментария
+            if 'text' in request.POST:
+                form = CommentForm(request.POST)
+                if form.is_valid():
+                    comment = form.save(commit=False)
+                    comment.movie = movie
+                    comment.user = User.objects.get(id=user_id)
+                    comment.save()
+                    return redirect('movie_detail', movie_id=movie.id)
+
+            # Обработка рейтинга
+            elif 'rating' in request.POST:
+                rating = int(request.POST.get('rating'))
+                if 1 <= rating <= 5:  # Проверка допустимого диапазона
+                    user = User.objects.get(id=user_id)
+                    MovieRating.objects.update_or_create(
+                        user=user,
+                        movie=movie,
+                        defaults={'rating': rating}
+                    )
+                    movie.update_rating(rating)
+                    return redirect('movie_detail', movie_id=movie.id)
+
     return render(request, 'movies/movie_detail.html', {
         'movie': movie,
         'comments': comments,
         'form': form,
-        'filtered_genres': filtered_genres
+        'filtered_genres': filtered_genres,
+        'is_authenticated': is_authenticated,
+        'is_liked': is_liked,
+        'user_rating': user_rating,
     })
 
-@login_required
 def user_comments(request):
-    comments = Comment.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'users/user_comments.html', {'comments': comments})
+    # Проверяем, что пользователь аутентифицирован через сессию
+    if 'user_id' not in request.session:
+        return redirect('login')
 
+    # Получаем пользователя из базы данных
+    try:
+        user = User.objects.get(id=request.session['user_id'])
+    except User.DoesNotExist:
+        return redirect('login')
+
+    comments = Comment.objects.filter(is_resolved=False).order_by('-created_at')
+
+    if request.method == 'POST':
+        text = request.POST.get('text')
+        if text:
+            Comment.objects.create(user=user, text=text)
+            return redirect('movie_list')
 @user_passes_test(lambda u: u.is_superuser)
 def upload_movie_video(request, movie_id):
     movie = get_object_or_404(Movie, pk=movie_id)
@@ -82,64 +130,90 @@ def upload_movie_video(request, movie_id):
 
     return redirect('movie_detail', movie_id=movie.movie_id)
 
+
 def like_movie(request, movie_id):
-    if not request.session.get('user_id'):  # Проверяем, авторизован ли пользователь
-        return redirect('login')  # Если нет, перенаправляем на страницу входа
+    if 'user_id' not in request.session:
+        return redirect('login')
 
     user_id = request.session['user_id']
     user = User.objects.get(id=user_id)
-    movie = get_object_or_404(Movie, id=movie_id)  # Используем get_object_or_404
+    movie = get_object_or_404(Movie, id=movie_id)
 
-    # Проверяем, не лайкнул ли пользователь фильм ранее
     if not Liked.objects.filter(user=user, movie=movie).exists():
-        Liked.objects.create(user=user, movie=movie)  # Создаем запись о лайке
-
-    return redirect('movie_detail', movie_id=movie_id)  # Перенаправляем на страницу описания фильма
-
-@login_required
-def rate_movie(request, movie_id):
-    movie = get_object_or_404(Movie, pk=movie_id)
-    if request.method == 'POST':
-        rating = int(request.POST.get('rating'))
-
-        # Сохраняем оценку пользователя
-        MovieRating.objects.update_or_create(
-            user=request.user,
-            movie=movie,
-            defaults={'rating': rating}
-        )
-
-        # Обновляем средний рейтинг фильма
-        movie.update_rating(rating)
+        Liked.objects.create(user=user, movie=movie)
 
     return redirect('movie_detail', movie_id=movie_id)
 
-@user_passes_test(lambda u: u.is_staff)
+
+def rate_movie(request, movie_id):
+    if 'user_id' not in request.session:
+        return redirect('login')
+
+    movie = get_object_or_404(Movie, pk=movie_id)
+    if request.method == 'POST':
+        rating = int(request.POST.get('rating'))
+        try:
+            user = User.objects.get(id=request.session['user_id'])
+            MovieRating.objects.update_or_create(
+                user=user,
+                movie=movie,
+                defaults={'rating': rating}
+            )
+            movie.update_rating(rating)
+        except User.DoesNotExist:
+            return redirect('login')
+
+    return redirect('movie_detail', movie_id=movie_id)
+
 def complaint_list(request):
+    # Проверяем, что пользователь аутентифицирован через сессию
+    if 'user_id' not in request.session:
+        return redirect('login')
+
+    # Получаем пользователя из базы данных
+    try:
+        user = User.objects.get(id=request.session['user_id'])
+    except User.DoesNotExist:
+        return redirect('login')
+
+    # Проверяем, является ли пользователь администратором (если нужно)
+    # Если вам не нужна проверка на staff, можно удалить эту проверку
+    is_staff = getattr(user, 'is_staff', False)  # Безопасная проверка атрибута
+
     complaints = Complaint.objects.filter(is_resolved=False).order_by('-created_at')
+
     if request.method == 'POST':
         text = request.POST.get('text')
         if text:
-            Complaint.objects.create(user=request.user, text=text)
+            Complaint.objects.create(user=user, text=text)
             return redirect('complaint_list')
+
     return render(request, 'movies/complaint_list.html', {
         'complaints': complaints,
-        'no_complaints': not complaints.exists()
+        'no_complaints': not complaints.exists(),
+        'current_user': user  # Передаем пользователя в шаблон
     })
 
-@user_passes_test(lambda u: u.is_superuser)
 def resolve_complaint(request, complaint_id):
+    if 'user_id' not in request.session or not User.objects.get(id=request.session['user_id']).is_superuser:
+        return redirect('login')
+
     complaint = get_object_or_404(Complaint, pk=complaint_id)
     if request.method == 'POST':
         complaint.is_resolved = True
         complaint.save()
-    return redirect('complaint_list')  # Исправлен редирект
+    return redirect('complaint_list')
 
-@login_required
+
 def submit_complaint(request):
+    if 'user_id' not in request.session:
+        return redirect('login')
+
     if request.method == 'POST':
         text = request.POST.get('text')
         if text:
-            Complaint.objects.create(user=request.user, text=text)
-            return redirect('movie_list')  # Перенаправление на главную
+            user_id = request.session['user_id']
+            user = User.objects.get(id=user_id)
+            Complaint.objects.create(user=user, text=text)
+            return redirect('movie_list')
     return redirect('movie_list')

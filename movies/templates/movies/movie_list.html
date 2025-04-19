@@ -9,18 +9,21 @@
 <header>
     <nav>
         <a href="{% url 'movie_list' %}">Home</a>
-        {% if request.user.is_authenticated %}
-            <p>User: {{ request.user.username }}</p>
-            <a href="{% url 'profile' %}">Profile</a>
-            <a href="{% url 'logout' %}">Logout</a>
-            <a href="{% url 'complaint_list' %}">Жалобы</a>
+        {% if 'user_id' in request.session %}
+            {% with user=request.session.user %}
+                <p>User: {{ user.username }}</p>
+                <a href="{% url 'profile' %}">Profile</a>
+                <a href="{% url 'logout' %}">Logout</a>
+{% if 'user_id' in request.session %}
+    <a href="{% url 'complaint_list' %}">Жалобы</a>
+{% endif %}
+            {% endwith %}
         {% else %}
             <a href="{% url 'login' %}">Login</a>
             <a href="{% url 'register' %}">Register</a>
         {% endif %}
     </nav>
 </header>
-
 
     <h1>Movie List</h1>
 
