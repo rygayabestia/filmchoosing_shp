@@ -1,14 +1,12 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-from movies.models import Movie  # Убедитесь, что модель Movie существует
-#from users.models import User
+from movies.models import Movie
 
-class User(models.Model):
-    name = models.CharField(max_length=255)
-    login = models.CharField(max_length=255, unique=True)
-    password = models.CharField(max_length=255)
-
-    def __str__(self):
-        return self.name
+class User(AbstractUser):
+    # Удаляем все старые поля (name, login, password - они уже есть в AbstractUser)
+    class Meta:
+        verbose_name = 'User'
+        verbose_name_plural = 'Users'
 
 class Liked(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -16,7 +14,4 @@ class Liked(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'movie')  # Уникальная пара пользователь-фильм
-
-    def __str__(self):
-        return f'{self.user.name} likes {self.movie.title}'
+        unique_together = ('user', 'movie')

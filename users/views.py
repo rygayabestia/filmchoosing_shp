@@ -1,59 +1,60 @@
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
 
 from movies.models import Movie
-from .models import User, Liked
 from .forms import CustomUserCreationForm, CustomUserChangeForm
+from .models import Liked
+
 
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('login')
+            user = form.save()  # Пароль автоматически хэшируется
+            auth_login(request, user)  # Автовход после регистрации
+            return redirect('profile')
     else:
         form = CustomUserCreationForm()
     return render(request, 'users/register.html', {'form': form})
 
 def user_login(request):
     if request.method == 'POST':
-        login = request.POST['login']
-        password = request.POST['password']
-        try:
-            user = User.objects.get(login=login, password=password)
-            request.session['user_id'] = user.id
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            auth_login(request, user)  # Стандартный вход Django
             return redirect('profile')
-        except User.DoesNotExist:
-            return render(request, 'users/login.html', {'error': 'Invalid login or password'})
+        return render(request, 'users/login.html', {'error': 'Неверные данные'})
     return render(request, 'users/login.html')
 
 def user_logout(request):
-    if 'user_id' in request.session:
-        del request.session['user_id']
+    auth_logout(request)  # Стандартный выход
     return redirect('movie_list')
 
+@login_required
 def profile(request):
-    user_id = request.session.get('user_id')
-    if not user_id:
-        return redirect('login')
-
-    user = User.objects.get(id=user_id)
-    liked_movies = Liked.objects.filter(user=user).select_related('movie')
-    return render(request, 'users/profile.html', {'user': user, 'liked_movies': liked_movies})
+    liked_movies = request.user.liked_movies.all()  # Доступ через related_name
+    return render(request, 'users/profile.html', {
+        'user': request.user,
+        'liked_movies': liked_movies
+    })
 
 def edit_profile(request):
-    user_id = request.session.get('user_id')
-    if not user_id:
+    if not request.user.is_authenticated:
         return redirect('login')
 
-    user = User.objects.get(id=user_id)
     if request.method == 'POST':
-        form = CustomUserChangeForm(request.POST, instance=user)
+        form = CustomUserChangeForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
             return redirect('profile')
     else:
-        form = CustomUserChangeForm(instance=user)
+        form = CustomUserChangeForm(instance=request.user)
     return render(request, 'users/edit_profile.html', {'form': form})
+
 
 def like_movie(request, movie_id):
     if not request.session.get('user_id'):

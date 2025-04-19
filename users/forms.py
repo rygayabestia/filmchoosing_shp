@@ -1,21 +1,12 @@
-from django import forms
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import User
 
-class CustomUserCreationForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput)
-
+class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = User
-        fields = ('name', 'login', 'password')
+        fields = ('username', 'password1', 'password2')  # Стандартные поля Django
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.password = self.cleaned_data['password']  # Сохраняем пароль в явном виде
-        if commit:
-            user.save()
-        return user
-
-class CustomUserChangeForm(forms.ModelForm):
+class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = User
-        fields = ('name', 'login', 'password')
+        fields = ('username', 'email', 'first_name')  # Пример полей
