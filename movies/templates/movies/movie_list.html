@@ -59,6 +59,7 @@
             transition: all 0.3s ease;
             font-size: 1rem;
             font-weight: bold;
+            text-decoration: none;
         }
 
         .nav-btn:hover {
@@ -223,9 +224,9 @@
     <header>
         <div class="logo">CineWave</div>
         <div class="nav-buttons">
-            <button class="nav-btn">Главная</button>
-            <button class="nav-btn">Вход</button>
-            <button class="nav-btn">Регистрация</button>
+            <a href="{% url 'movie_list' %}" class="nav-btn">Главная</a>
+            <a href="{% url 'login' %}" class="nav-btn">Вход</a>
+            <a href="{% url 'register' %}" class="nav-btn">Регистрация</a>
         </div>
     </header>
 
