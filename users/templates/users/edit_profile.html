@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineWave - Редактирование профиля</title>
     <style>
-        /* Основные стили */
         :root {
             --primary-color: #1a1a2e;
             --secondary-color: #16213e;
             --accent-color: #0f3460;
             --text-color: #e94560;
             --light-text: #f1f1f1;
+            --input-bg: rgba(15, 52, 96, 0.3);
         }
 
         body {
@@ -23,8 +26,8 @@
         /* Шапка сайта */
         header {
             background-color: var(--secondary-color);
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             text-align: center;
         }
 
@@ -40,191 +43,191 @@
         .nav-buttons {
             display: flex;
             justify-content: center;
-            gap: 2rem;
-            margin-bottom: 1rem;
+            gap: 1.5rem;
+            margin-bottom: 0.5rem;
         }
 
         .nav-btn {
-            padding: 0.5rem 1.5rem;
-            background-color: transparent;
-            color: var(--light-text);
+            padding: 0.7rem 1.8rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
             border: none;
-            border-bottom: 2px solid transparent;
+            border-radius: 30px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 1rem;
-            font-weight: bold;
+            font-weight: 600;
+            text-decoration: none;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .nav-btn:hover {
-            color: var(--text-color);
-            border-bottom-color: var(--text-color);
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
         /* Основной контент */
         .profile-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 0 2rem;
             display: flex;
-            min-height: calc(100vh - 180px);
+            justify-content: center;
         }
 
-        /* Боковая панель (как в основном интерфейсе) */
-        .profile-sidebar {
-            width: 300px;
+        /* Форма редактирования */
+        .profile-form {
             background-color: var(--secondary-color);
-            padding: 2rem;
-            border-radius: 8px;
-            margin-right: 2rem;
-        }
-
-        .profile-title {
-            font-size: 1.5rem;
-            color: var(--text-color);
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .profile-info {
-            margin-bottom: 2rem;
-        }
-
-        .info-item {
-            margin-bottom: 1rem;
-            padding: 0.8rem;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-        }
-
-        .info-item:hover {
-            background-color: var(--accent-color);
-        }
-
-        .info-label {
-            font-weight: bold;
-            color: var(--text-color);
-            display: inline-block;
-            width: 100px;
-        }
-
-        /* Основное содержимое профиля */
-        .profile-content {
-            flex: 1;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 600px;
         }
 
         .section-title {
-            font-size: 1.5rem;
             color: var(--text-color);
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--accent-color);
-        }
-
-        .movies-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .movie-card {
-            background-color: var(--secondary-color);
-            border-radius: 8px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .movie-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .movie-poster {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .movie-info {
-            padding: 1rem;
+            font-size: 2rem;
+            margin-bottom: 2rem;
             text-align: center;
+            position: relative;
+            padding-bottom: 1rem;
         }
 
-        .movie-title {
-            margin: 0;
-            font-size: 1rem;
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background-color: var(--text-color);
+            border-radius: 3px;
+        }
+
+        .form-group {
+            margin-bottom: 1.8rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
             color: var(--light-text);
+            font-size: 1.1rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--accent-color);
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            color: var(--light-text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--text-color);
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.3);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 0.5rem;
+            color: #aaa;
+            font-size: 0.85rem;
         }
 
         /* Кнопки действий */
         .action-buttons {
-            margin-top: 2rem;
             display: flex;
-            gap: 1rem;
+            gap: 1.5rem;
             justify-content: center;
+            margin-top: 2.5rem;
         }
 
         .action-btn {
-            padding: 0.8rem 1.5rem;
+            padding: 1rem 2.5rem;
             background-color: var(--text-color);
             color: var(--primary-color);
             border: none;
-            border-radius: 4px;
-            font-weight: bold;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-decoration: none;
-            text-transform: uppercase;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
         }
 
         .action-btn.secondary {
             background-color: var(--accent-color);
             color: var(--light-text);
+            box-shadow: 0 4px 12px rgba(15, 52, 96, 0.3);
         }
 
         .action-btn:hover {
-            background-color: #ff5c7a;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(233, 69, 96, 0.4);
         }
 
         .action-btn.secondary:hover {
             background-color: #1a3a6a;
+            box-shadow: 0 6px 16px rgba(15, 52, 96, 0.4);
         }
 
         /* Футер */
         footer {
             background-color: var(--secondary-color);
-            padding: 1.5rem;
+            padding: 2rem;
             text-align: center;
+            margin-top: 3rem;
             font-size: 0.9rem;
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .profile-form {
+            animation: fadeIn 0.6s ease-out forwards;
         }
 
         /* Адаптивность */
         @media (max-width: 768px) {
-            .profile-container {
-                flex-direction: column;
-                padding: 1rem;
-            }
-
-            .profile-sidebar {
-                width: 100%;
-                margin-right: 0;
-                margin-bottom: 2rem;
-            }
-
             .nav-buttons {
-                flex-direction: column;
-                gap: 0.5rem;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .nav-btn {
+                padding: 0.6rem 1.2rem;
+            }
+
+            .profile-form {
+                padding: 1.8rem;
             }
 
             .action-buttons {
                 flex-direction: column;
-                align-items: center;
+                gap: 1rem;
+            }
+
+            .action-btn {
+                width: 100%;
+                padding: 0.9rem;
             }
         }
     </style>
-    <title>Редактирование профиля</title>
 </head>
 <body>
     <header>
@@ -237,34 +240,32 @@
     </header>
 
     <div class="profile-container">
-        <main class="profile-content">
+        <form method="post" class="profile-form">
             <h2 class="section-title">Редактирование профиля</h2>
 
-            <form method="post" class="profile-form">
-                {% csrf_token %}
+            {% csrf_token %}
 
-                <div class="form-group">
-                    <label for="id_name">Имя:</label>
-                    {{ form.name }}
-                </div>
+            <div class="form-group">
+                <label for="id_name">Имя</label>
+                {{ form.name }}
+            </div>
 
-                <div class="form-group">
-                    <label for="id_login">Логин:</label>
-                    {{ form.login }}
-                </div>
+            <div class="form-group">
+                <label for="id_login">Логин</label>
+                {{ form.login }}
+            </div>
 
-                <div class="form-group">
-                    <label for="id_password">Новый пароль:</label>
-                    <input type="password" name="password" id="id_password" class="form-control">
-                    <small>Оставьте пустым, если не хотите менять пароль</small>
-                </div>
+            <div class="form-group">
+                <label for="id_password">Новый пароль</label>
+                <input type="password" name="password" id="id_password" class="form-control">
+                <small>Оставьте пустым, если не хотите менять пароль</small>
+            </div>
 
-                <div class="action-buttons">
-                    <button type="submit" class="action-btn">Сохранить</button>
-                    <a href="{% url 'profile' %}" class="action-btn secondary">Отмена</a>
-                </div>
-            </form>
-        </main>
+            <div class="action-buttons">
+                <button type="submit" class="action-btn">Сохранить изменения</button>
+                <a href="{% url 'profile' %}" class="action-btn secondary">Отмена</a>
+            </div>
+        </form>
     </div>
 
     <footer>
