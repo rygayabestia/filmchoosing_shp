@@ -33,7 +33,7 @@
             {% endfor %}
         </p>
 
- <div class="movie-rating">
+<div class="movie-rating">
     <h3>Рейтинг: {{ movie.rating|floatformat:1 }}/5 ({{ movie.rating_count }} оценок)</h3>
 
     {% if is_authenticated %}
@@ -82,11 +82,11 @@
 
         <!-- Кнопки действий -->
         <div class="action-buttons">
-            {% if user_id %}
-                <a href="{% url 'like_movie' movie.id %}" class="btn-like">
-                    {% if movie.id in liked_movie_ids %}❤️ Unlike{% else %}🤍 Like{% endif %}
-                </a>
-            {% endif %}
+            {% if is_authenticated %}
+    <a href="{% url 'like_movie' movie.id %}" class="btn-like">
+        {% if movie.id in liked_movie_ids %}❤️ Unlike{% else %}🤍 Like{% endif %}
+    </a>
+{% endif %}
             <a href="{% url 'movie_list' %}" class="btn-back">← Назад к списку</a>
         </div>
 

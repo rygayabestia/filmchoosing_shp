@@ -10,6 +10,5 @@ urlpatterns = [
     path('complaints/', views.complaint_list, name='complaint_list'),
     path('complaints/submit/', views.submit_complaint, name='submit_complaint'),
     path('complaints/resolve/<int:complaint_id>/', views.resolve_complaint, name='resolve_complaint'),
-    path('<int:movie_id>/rate/', views.rate_movie, name='rate_movie'),
     path('movie/<int:movie_id>/comment/', views.user_comments, name='user_comments'),
 ]

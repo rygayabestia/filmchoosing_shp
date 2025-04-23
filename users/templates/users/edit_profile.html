@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CineWave - Профиль</title>
     <style>
         /* Основные стили */
         :root {
@@ -227,57 +224,46 @@
             }
         }
     </style>
+    <title>Редактирование профиля</title>
 </head>
 <body>
     <header>
         <div class="logo">CineWave</div>
         <div class="nav-buttons">
             <a href="{% url 'movie_list' %}" class="nav-btn">Главная</a>
-            <a href="{% url 'profile' %}" class="nav-btn active">Профиль</a>
+            <a href="{% url 'profile' %}" class="nav-btn">Профиль</a>
             <a href="{% url 'logout' %}" class="nav-btn">Выход</a>
         </div>
     </header>
 
     <div class="profile-container">
-        <aside class="profile-sidebar">
-            <h2 class="profile-title">Ваш профиль</h2>
-            <div class="profile-info">
-                <div class="info-item">
-                    <span class="info-label">Имя:</span>
-                    <span>{{ user.name }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Логин:</span>
-                    <span>{{ user.login }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Пароль:</span>
-                    <span>••••••••</span>
-                </div>
-            </div>
-            <div class="action-buttons">
-                <a href="{% url 'edit_profile' %}" class="action-btn">Редактировать</a>
-            </div>
-        </aside>
-
         <main class="profile-content">
-            <h2 class="section-title">Понравившиеся фильмы</h2>
-            {% if liked_movies %}
-                <div class="movies-grid">
-                    {% for like in liked_movies %}
-                    <div class="movie-card">
-                        <a href="{% url 'movie_detail' like.movie.id %}">
-                            <img src="{{ like.movie.poster_url }}" alt="{{ like.movie.title }}" class="movie-poster">
-                            <div class="movie-info">
-                                <h3 class="movie-title">{{ like.movie.title }}</h3>
-                            </div>
-                        </a>
-                    </div>
-                    {% endfor %}
+            <h2 class="section-title">Редактирование профиля</h2>
+
+            <form method="post" class="profile-form">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="id_name">Имя:</label>
+                    {{ form.name }}
                 </div>
-            {% else %}
-                <p>У вас пока нет понравившихся фильмов.</p>
-            {% endif %}
+
+                <div class="form-group">
+                    <label for="id_login">Логин:</label>
+                    {{ form.login }}
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password">Новый пароль:</label>
+                    <input type="password" name="password" id="id_password" class="form-control">
+                    <small>Оставьте пустым, если не хотите менять пароль</small>
+                </div>
+
+                <div class="action-buttons">
+                    <button type="submit" class="action-btn">Сохранить</button>
+                    <a href="{% url 'profile' %}" class="action-btn secondary">Отмена</a>
+                </div>
+            </form>
         </main>
     </div>
 

@@ -9,14 +9,12 @@ class Movie(models.Model):
     rating = models.FloatField(default=5.0)
     rating_count = models.IntegerField(default=1)
 
-    def update_rating(self, new_rating):
-        ratings = self.ratings.all()
-        if ratings.exists():
-            total = sum(r.rating for r in ratings)
-            self.rating = total / ratings.count()
-            self.rating_count = ratings.count()
-            self.save()
-
+    def update_rating(self):
+        from django.db.models import Avg
+        result = self.ratings.aggregate(avg=Avg('rating'))
+        self.rating = result['avg'] or 0
+        self.rating_count = self.ratings.count()
+        self.save()
     def __str__(self):
         return self.title
 
@@ -40,10 +38,20 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"Comment from {self.user.name} for {self.movie.title if self.movie else 'no movie'}"
+
 class MovieRating(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ratings')
-    movie = models.ForeignKey('Movie', on_delete=models.CASCADE, related_name='ratings')
-    rating = models.IntegerField(choices=[(i, str(i)) for i in range(1, 6)])
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # Используйте единый подход везде
+        on_delete=models.CASCADE,
+        related_name='ratings'
+    )
+    movie = models.ForeignKey(
+        'Movie',
+        on_delete=models.CASCADE,
+        db_constraint=True,
+        related_name='ratings'
+    )
+    rating = models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')])
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -51,7 +59,7 @@ class MovieRating(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.user.name}: {self.rating} for {self.movie.title}"
+        return f"{self.user.username}: {self.rating} for {self.movie.title}"
 
 class Complaint(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

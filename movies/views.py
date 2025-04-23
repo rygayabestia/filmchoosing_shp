@@ -1,3 +1,6 @@
+from sqlite3 import IntegrityError
+
+from django.http import Http404
 from django.shortcuts import render, get_object_or_404
 from .models import Movie, Comment, MovieRating
 from django.shortcuts import redirect
@@ -9,6 +12,10 @@ from .forms import CommentForm
 from django.contrib.auth.decorators import login_required
 from .models import Complaint, Liked
 from .forms import ComplaintForm
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Movie, Comment, MovieRating, Liked
+from users.models import User
+from .forms import CommentForm
 
 def movie_list(request):
     all_movies = Movie.objects.all()
@@ -50,17 +57,23 @@ def movie_detail(request, movie_id):
 
     form = CommentForm()
     is_authenticated = 'user_id' in request.session
-    is_liked = False
     user_rating = None
+    liked_movie_ids = []
 
     if is_authenticated:
         user_id = request.session['user_id']
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return redirect('login')
+
         # Проверка лайка
-        is_liked = Liked.objects.filter(user_id=user_id, movie=movie).exists()
+        liked_movie_ids = Liked.objects.filter(user=user).values_list('movie_id', flat=True)
+        is_liked = movie.id in liked_movie_ids
 
         # Получение текущей оценки пользователя
         try:
-            rating_obj = MovieRating.objects.get(user_id=user_id, movie=movie)
+            rating_obj = MovieRating.objects.get(user=user, movie=movie)
             user_rating = rating_obj.rating
         except MovieRating.DoesNotExist:
             pass
@@ -73,22 +86,52 @@ def movie_detail(request, movie_id):
                 if form.is_valid():
                     comment = form.save(commit=False)
                     comment.movie = movie
-                    comment.user = User.objects.get(id=user_id)
+                    comment.user = user
                     comment.save()
                     return redirect('movie_detail', movie_id=movie.id)
 
-            # Обработка рейтинга
+
             elif 'rating' in request.POST:
+
                 rating = int(request.POST.get('rating'))
-                if 1 <= rating <= 5:  # Проверка допустимого диапазона
-                    user = User.objects.get(id=user_id)
-                    MovieRating.objects.update_or_create(
-                        user=user,
-                        movie=movie,
-                        defaults={'rating': rating}
-                    )
-                    movie.update_rating(rating)
-                    return redirect('movie_detail', movie_id=movie.id)
+
+                if 1 <= rating <= 5:
+
+                    try:
+
+                        # Используем уже полученные user и movie
+
+                        rating_obj, created = MovieRating.objects.get_or_create(
+
+                            user=user,
+
+                            movie=movie,
+
+                            defaults={'rating': rating}
+
+                        )
+
+                        if not created:
+                            rating_obj.rating = rating
+
+                            rating_obj.save()
+
+                        movie.update_rating()
+
+                        return redirect('movie_detail', movie_id=movie.id)
+
+
+                    except IntegrityError as e:
+
+                        print(f"Ошибка IntegrityError: {e}")
+
+                        # Можно добавить сообщение об ошибке
+
+                        from django.contrib import messages
+
+                        messages.error(request, 'Ошибка сохранения оценки')
+
+                        return redirect('movie_detail', movie_id=movie.id)
 
     return render(request, 'movies/movie_detail.html', {
         'movie': movie,
@@ -96,7 +139,7 @@ def movie_detail(request, movie_id):
         'form': form,
         'filtered_genres': filtered_genres,
         'is_authenticated': is_authenticated,
-        'is_liked': is_liked,
+        'liked_movie_ids': liked_movie_ids,
         'user_rating': user_rating,
     })
 
@@ -118,6 +161,7 @@ def user_comments(request):
         if text:
             Comment.objects.create(user=user, text=text)
             return redirect('movie_list')
+
 @user_passes_test(lambda u: u.is_superuser)
 def upload_movie_video(request, movie_id):
     movie = get_object_or_404(Movie, pk=movie_id)
@@ -144,26 +188,6 @@ def like_movie(request, movie_id):
 
     return redirect('movie_detail', movie_id=movie_id)
 
-
-def rate_movie(request, movie_id):
-    if 'user_id' not in request.session:
-        return redirect('login')
-
-    movie = get_object_or_404(Movie, pk=movie_id)
-    if request.method == 'POST':
-        rating = int(request.POST.get('rating'))
-        try:
-            user = User.objects.get(id=request.session['user_id'])
-            MovieRating.objects.update_or_create(
-                user=user,
-                movie=movie,
-                defaults={'rating': rating}
-            )
-            movie.update_rating(rating)
-        except User.DoesNotExist:
-            return redirect('login')
-
-    return redirect('movie_detail', movie_id=movie_id)
 
 def complaint_list(request):
     # Проверяем, что пользователь аутентифицирован через сессию

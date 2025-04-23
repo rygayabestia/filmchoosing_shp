@@ -40,12 +40,14 @@ def profile(request):
     liked_movies = Liked.objects.filter(user=user).select_related('movie')
     return render(request, 'users/profile.html', {'user': user, 'liked_movies': liked_movies})
 
+
 def edit_profile(request):
     user_id = request.session.get('user_id')
     if not user_id:
         return redirect('login')
 
     user = User.objects.get(id=user_id)
+
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=user)
         if form.is_valid():
@@ -53,6 +55,7 @@ def edit_profile(request):
             return redirect('profile')
     else:
         form = CustomUserChangeForm(instance=user)
+
     return render(request, 'users/edit_profile.html', {'form': form})
 
 def like_movie(request, movie_id):
