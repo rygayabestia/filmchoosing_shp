@@ -176,11 +176,12 @@ def complaint_list(request):
     except User.DoesNotExist:
         return redirect('login')
 
-    # Проверяем, является ли пользователь администратором (если нужно)
-    # Если вам не нужна проверка на staff, можно удалить эту проверку
-    is_staff = getattr(user, 'is_staff', False)  # Безопасная проверка атрибута
-
-    complaints = Complaint.objects.filter(is_resolved=False).order_by('-created_at')
+    # Для администратора показываем все нерешенные жалобы
+    if user.is_superuser:
+        complaints = Complaint.objects.filter(is_resolved=False).order_by('-created_at')
+    else:
+        # Для обычного пользователя показываем только его жалобы
+        complaints = Complaint.objects.filter(user=user).order_by('-created_at')
 
     if request.method == 'POST':
         text = request.POST.get('text')
@@ -191,7 +192,8 @@ def complaint_list(request):
     return render(request, 'movies/complaint_list.html', {
         'complaints': complaints,
         'no_complaints': not complaints.exists(),
-        'current_user': user  # Передаем пользователя в шаблон
+        'current_user': user,
+        'is_admin': user.is_superuser
     })
 
 def resolve_complaint(request, complaint_id):
@@ -200,7 +202,7 @@ def resolve_complaint(request, complaint_id):
 
     complaint = get_object_or_404(Complaint, pk=complaint_id)
     if request.method == 'POST':
-        complaint.is_resolved = True
+        complaint.is_resolved = not complaint.is_resolved  # Переключаем статус
         complaint.save()
     return redirect('complaint_list')
 

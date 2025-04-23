@@ -15,11 +15,12 @@
             <div class="complaint-item">
                 <p>{{ complaint.text }}</p>
                 <small>От {{ complaint.user.username }} ({{ complaint.created_at|date:"d.m.Y H:i" }})</small>
+                <p>Статус: {% if complaint.is_resolved %}Решена{% else %}В обработке{% endif %}</p>
 
-                {% if current_user.is_superuser %}
+                {% if is_admin %}
                 <form method="post" action="{% url 'resolve_complaint' complaint.id %}">
                     {% csrf_token %}
-                    <button type="submit">Отметить как выполненную</button>
+                    <button type="submit">{% if complaint.is_resolved %}Вернуть в обработку{% else %}Отметить как решенную{% endif %}</button>
                 </form>
                 {% endif %}
             </div>
@@ -28,6 +29,7 @@
         <p>Жалоб пока нет.</p>
     {% endif %}
 
+    {% if not is_admin %}
     <div class="complaint-form">
         <h2>Оставить новую жалобу</h2>
         <form method="post">
@@ -36,5 +38,6 @@
             <button type="submit">Отправить жалобу</button>
         </form>
     </div>
+    {% endif %}
 </body>
 </html>
