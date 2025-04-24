@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -323,5 +324,204 @@
     {% endif %}
 </div>
     </div>
+<!-- Добавьте этот код в movie_detail.html перед закрывающим </body> тегом -->
+
+<!-- Миниплеер -->
+<div id="miniPlayer" class="mini-player">
+    <div class="mini-player-header">
+        <span class="mini-player-title">Трейлер</span>
+        <button class="mini-player-close">&times;</button>
+    </div>
+    <video id="miniPlayerVideo" class="mini-player-video" muted autoplay>
+        <!-- Видео будет добавлено через JavaScript -->
+    </video>
+</div>
+
+<style>
+    /* Стили для миниплеера */
+    .mini-player {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 250px; /* Изначальный маленький размер */
+        background-color: var(--secondary-color);
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        z-index: 1000;
+        transform: translateX(120%); /* Анимация появления справа */
+        transition: transform 0.3s ease;
+        display: none;
+    }
+
+    .mini-player.active {
+        transform: translateX(0);
+        display: block;
+    }
+
+    .mini-player-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background-color: var(--accent-color);
+        color: var(--light-text);
+        cursor: move;
+        font-size: 0.9rem;
+    }
+
+    .mini-player-title {
+        font-weight: bold;
+    }
+
+    .mini-player-close {
+        background: none;
+        border: none;
+        color: var(--light-text);
+        font-size: 1.2rem;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0 3px;
+    }
+
+    .mini-player-close:hover {
+        color: var(--text-color);
+    }
+
+    .mini-player-video {
+        width: 100%;
+        height: 140px; /* Фиксированная высота для маленького размера */
+        display: block;
+        object-fit: cover;
+    }
+
+    /* Стили для полноэкранного режима */
+    .mini-player.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        z-index: 2000;
+    }
+
+    .mini-player.fullscreen .mini-player-video {
+        height: calc(100% - 40px);
+        object-fit: contain;
+        background-color: #000;
+    }
+
+    @media (max-width: 768px) {
+        .mini-player {
+            width: 200px;
+            top: 10px;
+            right: 10px;
+        }
+        .mini-player-video {
+            height: 120px;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const miniPlayer = document.getElementById('miniPlayer');
+        const miniPlayerVideo = document.getElementById('miniPlayerVideo');
+        const closeBtn = document.querySelector('.mini-player-close');
+
+        // Проверяем, что элементы существуют
+        if (!miniPlayer || !miniPlayerVideo || !closeBtn) {
+            console.error("Элементы миниплеера не найдены");
+            return;
+        }
+
+        // Список видео для миниплеера
+        const miniPlayerVideos = [
+            "{% static 'videos/video_2025-03-26_23-22-36.mp4' %}",
+            // Добавьте другие видео по необходимости
+        ];
+
+        let currentVideoIndex = 0;
+
+        // Функция для загрузки и воспроизведения следующего видео
+        function playNextVideo() {
+            if (miniPlayerVideos.length === 0) return;
+
+            // Обновляем индекс текущего видео
+            currentVideoIndex = (currentVideoIndex + 1) % miniPlayerVideos.length;
+
+            // Устанавливаем источник видео
+            miniPlayerVideo.src = miniPlayerVideos[currentVideoIndex];
+
+            // Воспроизводим видео
+            miniPlayerVideo.play()
+                .then(() => console.log("Воспроизводится видео:", miniPlayerVideo.src))
+                .catch(e => console.error("Ошибка воспроизведения:", e));
+        }
+
+        // Обработчик события окончания видео
+        miniPlayerVideo.addEventListener('ended', playNextVideo);
+
+        // Показываем миниплеер через 3 секунды после загрузки страницы
+        setTimeout(() => {
+            // Начинаем с первого видео
+            if (miniPlayerVideos.length > 0) {
+                miniPlayerVideo.src = miniPlayerVideos[0];
+                miniPlayerVideo.muted = true;
+                miniPlayerVideo.autoplay = true;
+                miniPlayerVideo.controls = true;
+                miniPlayer.classList.add('active');
+
+                miniPlayerVideo.play()
+                    .then(() => console.log("Начато воспроизведение первого видео"))
+                    .catch(e => console.error("Ошибка автовоспроизведения:", e));
+            }
+        }, 3000);
+
+        // Закрытие миниплеера
+        closeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            miniPlayer.classList.remove('active', 'fullscreen');
+            miniPlayerVideo.pause();
+        });
+
+        // Переключение полноэкранного режима по двойному клику
+        miniPlayerVideo.addEventListener('dblclick', function() {
+            miniPlayer.classList.toggle('fullscreen');
+        });
+
+        // Закрытие полноэкранного режима по клику вне плеера
+        document.addEventListener('click', function(e) {
+            if (!miniPlayer.contains(e.target)) {
+                miniPlayer.classList.remove('fullscreen');
+            }
+        });
+
+        // Перетаскивание плеера
+        let isDragging = false;
+        let offsetX, offsetY;
+        const header = document.querySelector('.mini-player-header');
+
+        header.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            offsetX = e.clientX - miniPlayer.getBoundingClientRect().left;
+            offsetY = e.clientY - miniPlayer.getBoundingClientRect().top;
+            miniPlayer.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            miniPlayer.style.left = (e.clientX - offsetX) + 'px';
+            miniPlayer.style.top = (e.clientY - offsetY) + 'px';
+            miniPlayer.style.transform = 'none';
+        });
+
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+            miniPlayer.style.cursor = '';
+        });
+    });
+</script>
 </body>
 </html>
