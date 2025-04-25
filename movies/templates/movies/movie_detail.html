@@ -216,6 +216,27 @@
             .action-buttons {
                 flex-direction: column;
             }
+            .upload-form {
+    background: #16213e;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.upload-form input[type="file"] {
+    display: block;
+    margin: 10px 0;
+    color: white;
+}
+
+.upload-form button {
+    background: #e94560;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
         }
     </style>
 </head>
@@ -252,7 +273,7 @@
                 {% for i in "54321" %}
                     <button type="submit" name="rating" value="{{ i }}"
                             class="star {% if user_rating == i|add:0 %}active{% endif %}"
-                            title="Оценить на {{ i }} звезд">
+                            title="Оценить на {{ i }} звёзд">
                         ★
                     </button>
                 {% endfor %}
@@ -262,7 +283,7 @@
                 {% if user_rating %}
                     {{ user_rating }} звезда(ы)
                 {% else %}
-                    еще не поставлена
+                    ещё не поставлена
                 {% endif %}
             </small>
         </form>
@@ -271,33 +292,36 @@
     {% endif %}
 </div>
 
-        <!-- Видеоплеер -->
-        <div class="video-section">
-            {% if movie.video_file %}
-                <video width="640" height="360" controls>
-                    <source src="{{ movie.video_file.url }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            {% elif user_id and request.user.is_superuser %}
-                <form method="post" enctype="multipart/form-data" action="{% url 'upload_movie_video' movie.id %}">
-                    {% csrf_token %}
-                    <input type="file" name="video_file" accept="video/mp4" required>
-                    <button type="submit">Upload Video</button>
-                </form>
-            {% else %}
-                <p>Видео недоступно для этого фильма</p>
-            {% endif %}
-        </div>
+<div class="video-section">
+    {% if movie.video_file %}
+        <video width="640" height="360" controls>
+            <source src="{{ movie.video_file.url }}" type="video/mp4">
+            Ваш браузер не поддерживает видео.
+        </video>
+    {% elif is_authenticated and is_superuser %}
+        <form method="post" enctype="multipart/form-data" action="{% url 'upload_movie_video' movie.id %}">
+            {% csrf_token %}
+            <input type="file" name="video_file" accept="video/mp4" required>
+            <button type="submit" class="btn-submit">Загрузить видео</button>
+        </form>
+    {% else %}
+        <p>Видео недоступно для этого фильма.</p>
+    {% endif %}
+</div>
 
         <!-- Кнопки действий -->
         <div class="action-buttons">
-            {% if is_authenticated %}
-    <a href="{% url 'like_movie' movie.id %}" class="btn-like">
-        {% if movie.id in liked_movie_ids %}❤️ Unlike{% else %}🤍 Like{% endif %}
-    </a>
+{% if is_authenticated %}
+    <form method="post" action="{% url 'like_movie' movie.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-like">
+            {% if movie.id in liked_movie_ids %}❤️ Unlike{% else %}🤍 Like{% endif %}
+        </button>
+    </form>
 {% endif %}
             <a href="{% url 'movie_list' %}" class="btn-back">← Назад к списку</a>
         </div>
+
 
 <!-- Секция комментариев -->
 <div class="comments-section">
@@ -329,7 +353,7 @@
 <!-- Миниплеер -->
 <div id="miniPlayer" class="mini-player">
     <div class="mini-player-header">
-        <span class="mini-player-title">Трейлер</span>
+        <span class="mini-player-title">ковры</span>
         <button class="mini-player-close">&times;</button>
     </div>
     <video id="miniPlayerVideo" class="mini-player-video" muted autoplay>
@@ -338,18 +362,18 @@
 </div>
 
 <style>
-    /* Стили для миниплеера */
+    /* Обновленные стили для миниплеера */
     .mini-player {
         position: fixed;
         top: 20px;
         right: 20px;
-        width: 250px; /* Изначальный маленький размер */
+        width: 250px;
         background-color: var(--secondary-color);
         border-radius: 8px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         overflow: hidden;
-        z-index: 1000;
-        transform: translateX(120%); /* Анимация появления справа */
+        z-index: 2147483647; /* Максимально возможный z-index */
+        transform: translateX(120%);
         transition: transform 0.3s ease;
         display: none;
     }
@@ -359,43 +383,12 @@
         display: block;
     }
 
-    .mini-player-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 12px;
-        background-color: var(--accent-color);
-        color: var(--light-text);
-        cursor: move;
-        font-size: 0.9rem;
+    /* Убедитесь, что полноэкранный режим основного видео не перекрывает миниплеер */
+    video::-webkit-media-controls {
+        z-index: 2147483646 !important;
     }
 
-    .mini-player-title {
-        font-weight: bold;
-    }
-
-    .mini-player-close {
-        background: none;
-        border: none;
-        color: var(--light-text);
-        font-size: 1.2rem;
-        cursor: pointer;
-        line-height: 1;
-        padding: 0 3px;
-    }
-
-    .mini-player-close:hover {
-        color: var(--text-color);
-    }
-
-    .mini-player-video {
-        width: 100%;
-        height: 140px; /* Фиксированная высота для маленького размера */
-        display: block;
-        object-fit: cover;
-    }
-
-    /* Стили для полноэкранного режима */
+    /* Стили для полноэкранного режима миниплеера */
     .mini-player.fullscreen {
         position: fixed;
         top: 0;
@@ -403,24 +396,13 @@
         width: 100%;
         height: 100%;
         border-radius: 0;
-        z-index: 2000;
+        z-index: 2147483647;
     }
 
     .mini-player.fullscreen .mini-player-video {
         height: calc(100% - 40px);
         object-fit: contain;
         background-color: #000;
-    }
-
-    @media (max-width: 768px) {
-        .mini-player {
-            width: 200px;
-            top: 10px;
-            right: 10px;
-        }
-        .mini-player-video {
-            height: 120px;
-        }
     }
 </style>
 
@@ -429,6 +411,7 @@
         const miniPlayer = document.getElementById('miniPlayer');
         const miniPlayerVideo = document.getElementById('miniPlayerVideo');
         const closeBtn = document.querySelector('.mini-player-close');
+        const mainVideo = document.querySelector('.video-section video'); // Основное видео
 
         // Проверяем, что элементы существуют
         if (!miniPlayer || !miniPlayerVideo || !closeBtn) {
@@ -448,13 +431,8 @@
         function playNextVideo() {
             if (miniPlayerVideos.length === 0) return;
 
-            // Обновляем индекс текущего видео
             currentVideoIndex = (currentVideoIndex + 1) % miniPlayerVideos.length;
-
-            // Устанавливаем источник видео
             miniPlayerVideo.src = miniPlayerVideos[currentVideoIndex];
-
-            // Воспроизводим видео
             miniPlayerVideo.play()
                 .then(() => console.log("Воспроизводится видео:", miniPlayerVideo.src))
                 .catch(e => console.error("Ошибка воспроизведения:", e));
@@ -465,7 +443,6 @@
 
         // Показываем миниплеер через 3 секунды после загрузки страницы
         setTimeout(() => {
-            // Начинаем с первого видео
             if (miniPlayerVideos.length > 0) {
                 miniPlayerVideo.src = miniPlayerVideos[0];
                 miniPlayerVideo.muted = true;
@@ -489,14 +466,22 @@
         // Переключение полноэкранного режима по двойному клику
         miniPlayerVideo.addEventListener('dblclick', function() {
             miniPlayer.classList.toggle('fullscreen');
-        });
 
-        // Закрытие полноэкранного режима по клику вне плеера
-        document.addEventListener('click', function(e) {
-            if (!miniPlayer.contains(e.target)) {
-                miniPlayer.classList.remove('fullscreen');
+            // Если миниплеер в полноэкранном режиме, убедимся, что он поверх всего
+            if (miniPlayer.classList.contains('fullscreen')) {
+                miniPlayer.style.zIndex = '2147483647';
             }
         });
+
+        // Обработчик для основного видео при переходе в полноэкранный режим
+        if (mainVideo) {
+            mainVideo.addEventListener('fullscreenchange', function() {
+                if (document.fullscreenElement === mainVideo) {
+                    // Основное видео в полноэкранном режиме - поднимаем z-index миниплеера
+                    miniPlayer.style.zIndex = '2147483647';
+                }
+            });
+        }
 
         // Перетаскивание плеера
         let isDragging = false;

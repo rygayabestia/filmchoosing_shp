@@ -1,5 +1,8 @@
 from sqlite3 import IntegrityError
+from venv import logger
 
+from django.core.checks import messages
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404
 from .models import Movie, Comment, MovieRating
@@ -16,6 +19,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import Movie, Comment, MovieRating, Liked
 from users.models import User
 from .forms import CommentForm
+from django.contrib import messages
+from django.db import transaction, IntegrityError
 
 def movie_list(request):
     all_movies = Movie.objects.all()
@@ -32,11 +37,11 @@ def movie_list(request):
             if all(movie.genres.get(genre) == 'A' for genre in selected_genres):
                 movies.append(movie)
 
-    # Получаем список лайкнутых фильмов для текущего пользователя через сессию
+    # Получаем список лайкнутых фильмов для текущего пользователя
     liked_movie_ids = []
     if 'user_id' in request.session:
         user_id = request.session['user_id']
-        liked_movie_ids = Liked.objects.filter(user_id=user_id).values_list('movie_id', flat=True)
+        liked_movie_ids = list(Liked.objects.filter(user_id=user_id).values_list('movie_id', flat=True))
 
     paginator = Paginator(movies, 10)
     page_number = request.GET.get('page')
@@ -57,51 +62,59 @@ def movie_detail(request, movie_id):
 
     form = CommentForm()
     is_authenticated = 'user_id' in request.session
+    is_superuser = False
     user_rating = None
     liked_movie_ids = []
 
     if is_authenticated:
-        user_id = request.session['user_id']
         try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return redirect('login')
+            user = User.objects.get(id=request.session['user_id'])
+            is_superuser = user.is_superuser
+            if not user.is_active:
+                return redirect('login')
 
-        # Проверка лайка
-        liked_movie_ids = Liked.objects.filter(user=user).values_list('movie_id', flat=True)
-        is_liked = movie.id in liked_movie_ids
+            liked_movie_ids = Liked.objects.filter(user=user).values_list('movie_id', flat=True)
 
-        # Получение текущей оценки пользователя
-        try:
-            rating_obj = MovieRating.objects.get(user=user, movie=movie)
-            user_rating = rating_obj.rating
-        except MovieRating.DoesNotExist:
-            pass
+            try:
+                rating_obj = MovieRating.objects.get(user=user, movie=movie)
+                user_rating = rating_obj.rating
+            except MovieRating.DoesNotExist:
+                pass
 
-        # Обработка POST-запроса
-        if request.method == 'POST':
-            # Обработка комментария
-            if 'text' in request.POST:
-                form = CommentForm(request.POST)
-                if form.is_valid():
-                    comment = form.save(commit=False)
-                    comment.movie = movie
-                    comment.user = user
-                    comment.save()
-                    return redirect('movie_detail', movie_id=movie.id)
+            if request.method == 'POST':
+                if 'text' in request.POST:  # Обработка комментариев
+                    form = CommentForm(request.POST)
+                    if form.is_valid():
+                        comment = form.save(commit=False)
+                        comment.movie = movie
+                        comment.user = user
+                        comment.save()
+                        return redirect('movie_detail', movie_id=movie.id)
 
 
-            elif 'rating' in request.POST:
 
-                rating = int(request.POST.get('rating'))
-
-                if 1 <= rating <= 5:
+                elif 'rating' in request.POST:
 
                     try:
 
-                        # Используем уже полученные user и movie
+                        rating = int(request.POST.get('rating'))
 
-                        rating_obj, created = MovieRating.objects.get_or_create(
+                        if not (1 <= rating <= 5):
+                            messages.error(request, "Рейтинг должен быть от 1 до 5")
+
+                            return redirect('movie_detail', movie_id=movie.id)
+
+                        # Проверка существования пользователя и фильма
+
+                        if not User.objects.filter(id=user.id).exists():
+                            raise ValueError("Пользователь не существует")
+
+                        if not Movie.objects.filter(id=movie.id).exists():
+                            raise ValueError("Фильм не существует")
+
+                        # Используем update_or_create для атомарного обновления
+
+                        rating_obj, created = MovieRating.objects.update_or_create(
 
                             user=user,
 
@@ -111,27 +124,36 @@ def movie_detail(request, movie_id):
 
                         )
 
-                        if not created:
-                            rating_obj.rating = rating
-
-                            rating_obj.save()
+                        # Обновляем средний рейтинг фильма
 
                         movie.update_rating()
 
-                        return redirect('movie_detail', movie_id=movie.id)
+                        messages.success(request, f"Ваша оценка {rating} ★ успешно сохранена!")
 
 
                     except IntegrityError as e:
 
-                        print(f"Ошибка IntegrityError: {e}")
+                        logger.error(f"IntegrityError: {str(e)}")
 
-                        # Можно добавить сообщение об ошибке
+                        if "UNIQUE" in str(e):
 
-                        from django.contrib import messages
+                            messages.error(request, "Вы уже оценили этот фильм")
 
-                        messages.error(request, 'Ошибка сохранения оценки')
+                        else:
 
-                        return redirect('movie_detail', movie_id=movie.id)
+                            messages.error(request, "Ошибка базы данных при сохранении")
+
+
+                    except Exception as e:
+
+                        logger.error(f"Error saving rating: {str(e)}")
+
+                        messages.error(request, f"Ошибка: {str(e)}")
+
+                    return redirect('movie_detail', movie_id=movie.id)
+        except User.DoesNotExist:
+            messages.error(request, "Пользователь не найден")
+            return redirect('login')
 
     return render(request, 'movies/movie_detail.html', {
         'movie': movie,
@@ -141,6 +163,7 @@ def movie_detail(request, movie_id):
         'is_authenticated': is_authenticated,
         'liked_movie_ids': liked_movie_ids,
         'user_rating': user_rating,
+        'is_superuser': is_superuser,
     })
 
 def user_comments(request):
@@ -180,14 +203,20 @@ def like_movie(request, movie_id):
         return redirect('login')
 
     user_id = request.session['user_id']
-    user = User.objects.get(id=user_id)
+    user = get_object_or_404(User, id=user_id)
     movie = get_object_or_404(Movie, id=movie_id)
 
-    if not Liked.objects.filter(user=user, movie=movie).exists():
+    try:
+        # Проверяем, есть ли уже лайк от этого пользователя
+        liked = Liked.objects.get(user=user, movie=movie)
+        liked.delete()  # Удаляем лайк, если он существует
+        messages.success(request, "Фильм удален из избранного")
+    except Liked.DoesNotExist:
+        # Если лайка нет - создаем новый
         Liked.objects.create(user=user, movie=movie)
+        messages.success(request, "Фильм добавлен в избранное")
 
     return redirect('movie_detail', movie_id=movie_id)
-
 
 def complaint_list(request):
     # Проверяем, что пользователь аутентифицирован через сессию

@@ -24,7 +24,7 @@ class CustomUserChangeForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('name', 'login', 'password')
+        fields = ['name', 'login']
 
     def save(self, commit=True):
         user = super().save(commit=False)
